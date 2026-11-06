@@ -1,37 +1,35 @@
-﻿using Diseño_de_Aplicaciones_P01.model;
+﻿using Diseño_de_Aplicaciones_P01.Data;
+using Diseño_de_Aplicaciones_P01.model;
+using Microsoft.EntityFrameworkCore;
 
 namespace Diseño_de_Aplicaciones_P01.recursos
 {
     public class UsuarioRepository : IUsuarioRepository
     {
-        public List<Usuario> Usuarios { get; set; }
+        private readonly ApplicationDbContext _context;
 
-        public UsuarioRepository()
+        public UsuarioRepository(ApplicationDbContext context)
         {
-            Usuarios = new List<Usuario>
-            {
-                new Usuario { IdUsuario = 1, NombreUsuario = "Ana Torres", CorreoElectronicousuario = "ana@correo.com", Contrasenausuario = "ana123", Activo = true },
-                new Usuario { IdUsuario = 2, NombreUsuario = "Marco Aurelio", CorreoElectronicousuario = "marco@correo.com", Contrasenausuario = "marco123", Activo = true },
-                new Usuario { IdUsuario = 3, NombreUsuario = "Maria Antonieta", CorreoElectronicousuario = "maria@correo.com", Contrasenausuario = "maria123", Activo = true }
-            };
+            _context = context;
         }
 
-        public ICollection<Usuario> ObtenerUsuarios() => Usuarios;
+        public ICollection<Usuario> ObtenerUsuarios() => _context.Usuarios.AsNoTracking().ToList();
 
-        public Usuario BuscarPorId(int id) => Usuarios.FirstOrDefault(u => u.IdUsuario == id);
+        public Usuario? BuscarPorId(int id) => _context.Usuarios.AsNoTracking().FirstOrDefault(u => u.IdUsuario == id);
 
         public void AgregarUsuario(Usuario nuevoUsuario)
         {
-            nuevoUsuario.IdUsuario = Usuarios.Any() ? Usuarios.Max(u => u.IdUsuario) + 1 : 1;
-            Usuarios.Add(nuevoUsuario);
+            _context.Usuarios.Add(nuevoUsuario);
+            _context.SaveChanges();
         }
 
         public bool EliminarPorId(int id)
         {
-            var usuario = BuscarPorId(id);
+            var usuario = _context.Usuarios.FirstOrDefault(u => u.IdUsuario == id);
             if (usuario != null)
             {
-                Usuarios.Remove(usuario);
+                _context.Usuarios.Remove(usuario);
+                _context.SaveChanges();
                 return true;
             }
             return false;

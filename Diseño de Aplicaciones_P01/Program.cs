@@ -1,6 +1,6 @@
+using Diseño_de_Aplicaciones_P01.Data;
 using Diseño_de_Aplicaciones_P01.recursos;
-using Diseño_de_Aplicaciones_P01.model;
-using Diseño_de_Aplicaciones_P01.Controllers;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +11,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<repos_usuario>();
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
 var app = builder.Build();
 

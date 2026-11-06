@@ -8,11 +8,11 @@ namespace MiPrimeraApi.Controllers
     [Route("api/[controller]")]
     public class UsuariosController : ControllerBase
     {
-        private readonly repos_usuario _repositorio;
+        private readonly IUsuarioRepository _repositorio;
 
-        public UsuariosController(repos_usuario repos)
+        public UsuariosController(IUsuarioRepository repositorio)
         {
-            _repositorio = repos;
+            _repositorio = repositorio;
         }
 
         [HttpGet]
