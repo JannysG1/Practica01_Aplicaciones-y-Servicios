@@ -7,18 +7,21 @@ GO
 USE AplicacionesP01Db;
 GO
 
-IF OBJECT_ID(N'dbo.Usuarios', N'U') IS NULL
+IF OBJECT_ID(N'dbo.Usuarios', N'U') IS NOT NULL
 BEGIN
-	CREATE TABLE dbo.Usuarios
-	(
-		IdUsuario INT IDENTITY(1,1) NOT NULL,
-		NombreUsuario NVARCHAR(100) NOT NULL,
-		CorreoElectronicousuario NVARCHAR(150) NOT NULL,
-		Contrasenausuario NVARCHAR(255) NOT NULL,
-		Activo BIT NOT NULL CONSTRAINT DF_Usuarios_Activo DEFAULT (1),
-		CONSTRAINT PK_Usuarios PRIMARY KEY (IdUsuario)
-	);
+	DROP TABLE dbo.Usuarios;
 END
+GO
+
+CREATE TABLE dbo.Usuarios
+(
+	IdUsuario INT IDENTITY(1,1) NOT NULL,
+	NombreUsuario NVARCHAR(100) NOT NULL,
+	CorreoElectronicousuario NVARCHAR(150) NOT NULL,
+	Contrasenausuario NVARCHAR(255) NOT NULL,
+	Activo BIT NOT NULL CONSTRAINT DF_Usuarios_Activo DEFAULT (1),
+	CONSTRAINT PK_Usuarios PRIMARY KEY (IdUsuario)
+);
 GO
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Usuarios WHERE CorreoElectronicousuario = N'ana@correo.com')
