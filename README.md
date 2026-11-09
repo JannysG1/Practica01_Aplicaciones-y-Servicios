@@ -29,10 +29,21 @@ La API no contiene una interfaz gráfica tradicional; expone endpoints HTTP cons
 
 | Método | Ruta | Autorización | Función |
 |---|---|---|---|
-| `GET` | `/api/Usuarios` | Pública | Obtiene todos los usuarios registrados en SQL Server. |
-| `GET` | `/api/Usuarios/{id}` | Pública | Busca un usuario por su identificador. |
-| `POST` | `/api/Usuarios` | Pública | Registra un usuario nuevo en la base de datos. |
-| `DELETE` | `/api/Usuarios/{id}` | Pública | Elimina un usuario por su identificador. |
+| `GET` | `/api/Usuarios` | Requiere Token JWT (`[Authorize]`) | Tanto `Admin` como `Usuario` pueden consultar todos los usuarios registrados. |
+| `GET` | `/api/Usuarios/{id}` | Requiere Token JWT (`[Authorize]`) | Tanto `Admin` como `Usuario` pueden consultar un usuario por identificador. |
+| `POST` | `/api/Usuarios` | Requiere Rol `Admin` (`[Authorize(Roles = "Admin")]`) | Solo `Admin` puede registrar nuevos usuarios. |
+| `DELETE` | `/api/Usuarios/{id}` | Requiere Rol `Admin` (`[Authorize(Roles = "Admin")]`) | Solo `Admin` puede eliminar usuarios. |
+
+---
+
+## Roles y Usuarios Configurados
+
+Para pruebas de control de acceso basado en roles (RBAC), el endpoint `/api/Auth/login` cuenta con dos usuarios preconfigurados:
+
+| Usuario | Contraseña | Rol Asignado | Responsabilidades y Permisos |
+|---|---|---|---|
+| `admin` | `1234` | **`Admin`** | **Control Total:** Puede consultar (`GET`), crear (`POST`) y eliminar (`DELETE`) tanto productos como usuarios. |
+| `usuario` / `cliente` | `1234` | **`Usuario`** | **Solo Vista:** Puede consultar (`GET`) información. Cualquier intento de crear (`POST`) o eliminar (`DELETE`) responde con código **`403 Forbidden`**. |
 
 ---
 

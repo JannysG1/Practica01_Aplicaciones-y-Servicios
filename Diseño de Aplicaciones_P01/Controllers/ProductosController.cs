@@ -5,7 +5,7 @@ using Diseño_de_Aplicaciones_P01.recursos;
 
 namespace Diseño_de_Aplicaciones_P01.Controllers;
 
-[Authorize] // todo el controlador pide token
+[Authorize] // Exige autenticación: tanto Admin como Usuario pueden acceder a las consultas
 [ApiController]
 [Route("api/[controller]")]
 public class ProductosController : ControllerBase
@@ -17,13 +17,13 @@ public class ProductosController : ControllerBase
         _repo = repo;
     }
 
-    [HttpGet]
+    [HttpGet] // Tanto Admin como Usuario con permisos de vista pueden consultar todos
     public IActionResult ObtenerTodos()
     {
         return Ok(_repo.ObtenerTodos());
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id}")] // Tanto Admin como Usuario con permisos de vista pueden consultar por id
     public IActionResult ObtenerPorId(int id)
     {
         var producto = _repo.BuscarPorId(id);
@@ -34,7 +34,7 @@ public class ProductosController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")] // Solo el Administrador puede crear productos
     public IActionResult Crear([FromBody] Producto nuevoProducto)
     {
         var creado = _repo.Agregar(nuevoProducto);
@@ -42,7 +42,7 @@ public class ProductosController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")] // token + rol Admin
+    [Authorize(Roles = "Admin")] // Solo el Administrador puede eliminar productos
     public IActionResult Eliminar(int id)
     {
         var eliminado = _repo.EliminarPorId(id);

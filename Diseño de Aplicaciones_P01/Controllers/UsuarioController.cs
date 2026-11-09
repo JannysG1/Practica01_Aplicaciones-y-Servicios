@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Diseño_de_Aplicaciones_P01.recursos; 
 using Diseño_de_Aplicaciones_P01.model;
 
 namespace MiPrimeraApi.Controllers
 {
+    [Authorize] // Exige token a cualquier usuario autenticado (Admin o Usuario)
     [ApiController]
     [Route("api/[controller]")]
     public class UsuariosController : ControllerBase
@@ -15,12 +17,13 @@ namespace MiPrimeraApi.Controllers
             _repositorio = repositorio;
         }
 
-        [HttpGet]
+        [HttpGet] // Tanto Admin como Usuario con permisos de vista pueden consultar
         public ICollection<Usuario> ObtenerUsuarios()
         {
             return _repositorio.ObtenerUsuarios();
         }
-        [HttpGet("{id}")]
+
+        [HttpGet("{id}")] // Tanto Admin como Usuario pueden consultar por ID
         public ActionResult<Usuario> BuscarPorId(int id)
         {
             var usuario = _repositorio.BuscarPorId(id);
@@ -33,6 +36,7 @@ namespace MiPrimeraApi.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")] // Solo el Administrador puede crear
         public ActionResult AgregarUsuario([FromBody] Usuario nuevoUsuario)
         {
             _repositorio.AgregarUsuario(nuevoUsuario);
@@ -40,6 +44,7 @@ namespace MiPrimeraApi.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")] // Solo el Administrador puede eliminar
         public ActionResult EliminarPorId(int id)
         {
             bool eliminado = _repositorio.EliminarPorId(id);
@@ -49,6 +54,5 @@ namespace MiPrimeraApi.Controllers
             }
             return NoContent();
         }
-
     }
 }

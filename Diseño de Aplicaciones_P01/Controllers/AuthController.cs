@@ -24,14 +24,20 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public IActionResult Login(LoginRequest request)
     {
-        // SOLO PARA PRUEBAS: usuario fijo
-        if (request.Usuario != "admin" || request.Password != "1234")
+        // Dos usuarios fijos para pruebas con roles diferenciados
+        string? rol = null;
+        if (request.Usuario == "admin" && request.Password == "1234")
+            rol = "Admin";
+        else if ((request.Usuario == "cliente" || request.Usuario == "usuario") && request.Password == "1234")
+            rol = "Usuario";
+
+        if (rol == null)
             return Unauthorized(new { mensaje = "Usuario o contraseña incorrectos" });
 
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, request.Usuario),
-            new Claim(ClaimTypes.Role, "Admin"),
+            new Claim(ClaimTypes.Role, rol), // Aquí viaja el rol dentro del token
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
@@ -46,6 +52,11 @@ public class AuthController : ControllerBase
             expires: DateTime.UtcNow.AddHours(1),
             signingCredentials: creds);
 
-        return Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token) });
+        return Ok(new
+        {
+            token = new JwtSecurityTokenHandler().WriteToken(token),
+            usuario = request.Usuario,
+            rol = rol
+        });
     }
 }
