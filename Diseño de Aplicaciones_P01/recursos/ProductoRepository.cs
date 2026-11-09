@@ -1,32 +1,63 @@
+using Diseño_de_Aplicaciones_P01.Data;
 using Diseño_de_Aplicaciones_P01.model;
+using Microsoft.EntityFrameworkCore;
 
-namespace Diseño_de_Aplicaciones_P01.recursos
+namespace Diseño_de_Aplicaciones_P01.recursos;
+
+public class ProductoRepository
 {
-    public class ProductoRepository
+    private readonly CafeteriaDbContext _context;
+
+    public ProductoRepository(CafeteriaDbContext context)
     {
-        private readonly List<Producto> _productos = new()
+        _context = context;
+    }
+
+    public async Task<List<Producto>> ObtenerTodosAsync()
+    {
+        return await _context.Productos.AsNoTracking().ToListAsync();
+    }
+
+    public async Task<Producto?> BuscarPorIdAsync(int id)
+    {
+        return await _context.Productos
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == id);
+    }
+
+    public async Task<Producto> AgregarAsync(Producto producto)
+    {
+        _context.Productos.Add(producto);
+        await _context.SaveChangesAsync();
+        return producto;
+    }
+
+    public async Task<bool> ActualizarAsync(Producto producto)
+    {
+        var existente = await _context.Productos.FindAsync(producto.Id);
+        if (existente == null)
         {
-            new Producto { Id = 1, Nombre = "Café Americano", Precio = 2.50m, Activo = true },
-            new Producto { Id = 2, Nombre = "Capuchino", Precio = 3.50m, Activo = true }
-        };
-
-        public List<Producto> ObtenerTodos() => _productos;
-
-        public Producto? BuscarPorId(int id) => _productos.FirstOrDefault(p => p.Id == id);
-
-        public Producto Agregar(Producto producto)
-        {
-            producto.Id = _productos.Count > 0 ? _productos.Max(p => p.Id) + 1 : 1;
-            _productos.Add(producto);
-            return producto;
+            return false;
         }
 
-        public bool EliminarPorId(int id)
+        existente.Nombre = producto.Nombre;
+        existente.Precio = producto.Precio;
+        existente.Activo = producto.Activo;
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> EliminarPorIdAsync(int id)
+    {
+        var existente = await _context.Productos.FindAsync(id);
+        if (existente == null)
         {
-            var p = BuscarPorId(id);
-            if (p == null) return false;
-            _productos.Remove(p);
-            return true;
+            return false;
         }
+
+        _context.Productos.Remove(existente);
+        await _context.SaveChangesAsync();
+        return true;
     }
 }

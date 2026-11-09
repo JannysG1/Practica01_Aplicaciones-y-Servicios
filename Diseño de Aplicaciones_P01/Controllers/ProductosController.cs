@@ -1,13 +1,14 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using Diseño_de_Aplicaciones_P01.DTOs;
 using Diseño_de_Aplicaciones_P01.model;
 using Diseño_de_Aplicaciones_P01.recursos;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Diseño_de_Aplicaciones_P01.Controllers;
 
-[Authorize] // Exige autenticación: tanto Admin como Usuario pueden acceder a las consultas
-[ApiController]
+[Authorize]
 [Route("api/[controller]")]
+[ApiController]
 public class ProductosController : ControllerBase
 {
     private readonly ProductoRepository _repo;
@@ -17,37 +18,69 @@ public class ProductosController : ControllerBase
         _repo = repo;
     }
 
-    [HttpGet] // Tanto Admin como Usuario con permisos de vista pueden consultar todos
-    public IActionResult ObtenerTodos()
+    [HttpGet]
+    public async Task<ActionResult<List<Producto>>> ObtenerTodos()
     {
-        return Ok(_repo.ObtenerTodos());
+        var productos = await _repo.ObtenerTodosAsync();
+        return Ok(productos);
     }
 
-    [HttpGet("{id}")] // Tanto Admin como Usuario con permisos de vista pueden consultar por id
-    public IActionResult ObtenerPorId(int id)
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Producto>> ObtenerPorId(int id)
     {
-        var producto = _repo.BuscarPorId(id);
+        var producto = await _repo.BuscarPorIdAsync(id);
         if (producto == null)
+        {
             return NotFound(new { mensaje = "Producto no encontrado" });
-
+        }
         return Ok(producto);
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")] // Solo el Administrador puede crear productos
-    public IActionResult Crear([FromBody] Producto nuevoProducto)
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult> Agregar([FromBody] ProductoCreateDTO dto)
     {
-        var creado = _repo.Agregar(nuevoProducto);
-        return CreatedAtAction(nameof(ObtenerPorId), new { id = creado.Id }, creado);
+        var producto = new Producto
+        {
+            Nombre = dto.Nombre,
+            Precio = dto.Precio,
+            Activo = dto.Activo
+        };
+
+        await _repo.AgregarAsync(producto);
+        return CreatedAtAction(nameof(ObtenerPorId), new { id = producto.Id }, producto);
+    }
+
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult> Actualizar(int id, [FromBody] ProductoUpdateDTO dto)
+    {
+        var producto = new Producto
+        {
+            Id = id,
+            Nombre = dto.Nombre,
+            Precio = dto.Precio,
+            Activo = dto.Activo
+        };
+
+        bool actualizado = await _repo.ActualizarAsync(producto);
+        if (!actualizado)
+        {
+            return NotFound(new { mensaje = "Producto no encontrado para actualizar" });
+        }
+
+        return NoContent();
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")] // Solo el Administrador puede eliminar productos
-    public IActionResult Eliminar(int id)
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult> Eliminar(int id)
     {
-        var eliminado = _repo.EliminarPorId(id);
+        bool eliminado = await _repo.EliminarPorIdAsync(id);
         if (!eliminado)
-            return NotFound(new { mensaje = "Producto no encontrado" });
+        {
+            return NotFound(new { mensaje = "Producto no encontrado para eliminar" });
+        }
 
         return NoContent();
     }

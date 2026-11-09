@@ -20,18 +20,20 @@ La API no contiene una interfaz gráfica tradicional; expone endpoints HTTP cons
 
 | Método | Ruta | Autorización | Función |
 |---|---|---|---|
-| `GET` | `/api/Productos` | Requiere Token JWT (`[Authorize]`) | Obtiene la lista de productos disponibles. |
+| `GET` | `/api/Productos` | Requiere Token JWT (`[Authorize]`) | Obtiene la lista de productos disponibles desde SQL Server. |
 | `GET` | `/api/Productos/{id}` | Requiere Token JWT (`[Authorize]`) | Obtiene un producto por su identificador. |
-| `POST` | `/api/Productos` | Requiere Rol `Admin` (`[Authorize(Roles = "Admin")]`) | Agrega un nuevo producto al catálogo. |
-| `DELETE` | `/api/Productos/{id}` | Requiere Rol `Admin` (`[Authorize(Roles = "Admin")]`) | Elimina un producto por su identificador. |
+| `POST` | `/api/Productos` | Requiere Rol `Admin` (`[Authorize(Roles = "Admin")]`) | Agrega un nuevo producto a la base de datos (Id autoincremental). |
+| `PUT` | `/api/Productos/{id}` | Requiere Rol `Admin` (`[Authorize(Roles = "Admin")]`) | Actualiza un producto existente en la base de datos. |
+| `DELETE` | `/api/Productos/{id}` | Requiere Rol `Admin` (`[Authorize(Roles = "Admin")]`) | Elimina un producto por su identificador en SQL Server. |
 
 ### 3. Gestión de Usuarios (`api/Usuarios`)
 
 | Método | Ruta | Autorización | Función |
 |---|---|---|---|
-| `GET` | `/api/Usuarios` | Requiere Token JWT (`[Authorize]`) | Tanto `Admin` como `Usuario` pueden consultar todos los usuarios registrados. |
-| `GET` | `/api/Usuarios/{id}` | Requiere Token JWT (`[Authorize]`) | Tanto `Admin` como `Usuario` pueden consultar un usuario por identificador. |
-| `POST` | `/api/Usuarios` | Requiere Rol `Admin` (`[Authorize(Roles = "Admin")]`) | Solo `Admin` puede registrar nuevos usuarios. |
+| `GET` | `/api/Usuarios` | Requiere Token JWT (`[Authorize(Roles = "Admin,Usuario")]`) | Consulta la lista de todos los usuarios registrados. |
+| `GET` | `/api/Usuarios/{id}` | Requiere Token JWT (`[Authorize(Roles = "Admin,Usuario")]`) | Consulta un usuario por su identificador. |
+| `POST` | `/api/Usuarios` | Requiere Rol `Admin` (`[Authorize(Roles = "Admin")]`) | Solo `Admin` puede registrar nuevos usuarios (con validación de correo único y formato). |
+| `PUT` | `/api/Usuarios/{id}` | Requiere Rol `Admin` (`[Authorize(Roles = "Admin")]`) | Solo `Admin` puede actualizar usuarios existentes. |
 | `DELETE` | `/api/Usuarios/{id}` | Requiere Rol `Admin` (`[Authorize(Roles = "Admin")]`) | Solo `Admin` puede eliminar usuarios. |
 
 ---
@@ -42,8 +44,8 @@ Para pruebas de control de acceso basado en roles (RBAC), el endpoint `/api/Auth
 
 | Usuario | Contraseña | Rol Asignado | Responsabilidades y Permisos |
 |---|---|---|---|
-| `admin` | `1234` | **`Admin`** | **Control Total:** Puede consultar (`GET`), crear (`POST`) y eliminar (`DELETE`) tanto productos como usuarios. |
-| `usuario` / `cliente` | `1234` | **`Usuario`** | **Solo Vista:** Puede consultar (`GET`) información. Cualquier intento de crear (`POST`) o eliminar (`DELETE`) responde con código **`403 Forbidden`**. |
+| `admin` | `1234` | **`Admin`** | **Control Total:** Puede consultar (`GET`), crear (`POST`), actualizar (`PUT`) y eliminar (`DELETE`) tanto productos como usuarios. |
+| `usuario` / `cliente` | `1234` | **`Usuario`** | **Solo Vista:** Puede consultar (`GET`) información. Cualquier intento de crear (`POST`), actualizar (`PUT`) o eliminar (`DELETE`) responde con código **`403 Forbidden`**. |
 
 ---
 
@@ -111,17 +113,23 @@ Swagger UI incluye soporte para esquemas de seguridad HTTP `Bearer`, lo que perm
 - **`Usuario.cs`**: Representa la entidad de usuario mapeada a la tabla `Usuarios` en SQL Server.
 - **`Producto.cs`**: Representa la entidad de producto para el catálogo.
 
+### DTOs (`DTOs/`)
+- **`ProductoCreateDTO.cs`**: Objeto de transferencia de datos para la creación de productos (`Nombre`, `Precio`, `Activo`), desacoplando el modelo del contrato de entrada.
+- **`ProductoUpdateDTO.cs`**: Objeto de transferencia de datos para la actualización de productos.
+
 ### Repositorios y Recursos (`recursos/`)
 - **`IUsuarioRepository.cs`**: Contrato para el acceso y manipulación de datos de usuarios.
 - **`repos_usuario.cs`**: Implementación del repositorio de usuarios utilizando `ApplicationDbContext`.
-- **`ProductoRepository.cs`**: Repositorio de productos registrado como Singleton para demostración de operaciones en memoria.
+- **`ProductoRepository.cs`**: Repositorio de productos registrado con ciclo de vida **`Scoped`** (`AddScoped`), interactuando de forma asíncrona (`async/await`) con `CafeteriaDbContext` y SQL Server.
 
-### Acceso a Datos (`Data/`)
-- **`ApplicationDbContext.cs`**: Contexto de Entity Framework Core que configura y gestiona el mapeo de entidades con SQL Server LocalDB.
+### Acceso a Datos (`Data/` y `Migrations/`)
+- **`CafeteriaDbContext.cs`**: Contexto de Entity Framework Core que gestiona la tabla `Productos` con clave primaria `Id` autoincremental (`IDENTITY(1, 1)`), longitud máxima en `Nombre` y precisión `(18, 2)` en `Precio`.
+- **`ApplicationDbContext.cs`**: Contexto de Entity Framework Core para la tabla `Usuarios`.
+- **`Migrations/`**: Migraciones Code-First (`20261109125342_Inicial.cs` y snapshot del modelo) aplicadas a SQL Server LocalDB.
 
 ### Configuración Global (`Program.cs`)
-- Registro de controladores y repositorios en el contenedor de inyección de dependencias.
-- Registro del contexto de base de datos con SQL Server.
+- Registro de controladores y repositorios en el contenedor de inyección de dependencias (`AddScoped<ProductoRepository>`).
+- Registro de contextos de base de datos con SQL Server (`CafeteriaDbContext` y `ApplicationDbContext`).
 - Configuración del servicio de autenticación JWT (`AddAuthentication` y `AddJwtBearer`).
 - Configuración de autorización (`AddAuthorization`).
 - Configuración de Swagger con esquemas de seguridad OpenAPI (`Bearer`).
@@ -131,9 +139,10 @@ Swagger UI incluye soporte para esquemas de seguridad HTTP `Bearer`, lo que perm
 
 ## Persistencia y Base de Datos SQL Server
 
-La aplicación utiliza SQL Server LocalDB mediante Entity Framework Core 8:
-- Cadena de conexión: `DefaultConnection` apuntando a `(localdb)\MSSQLLocalDB` y base de datos `AplicacionesP01Db`.
-- Script de inicialización: `Diseño de Aplicaciones_P01/Scripts/InicializarBaseDeDatos.sql` para crear la base de datos y la tabla `Usuarios` con datos de prueba iniciales.
+La aplicación utiliza SQL Server LocalDB mediante Entity Framework Core 8 con enfoque **Code-First**:
+- **Base de datos CafeteriaDb**: Creada mediante migraciones de EF Core (`dotnet ef migrations add Inicial` y `dotnet ef database update`), gestionando la tabla `dbo.Productos` con clave primaria autoincremental (`Id int IDENTITY(1,1)`).
+- **Base de datos AplicacionesP01Db**: Gestionada mediante `ApplicationDbContext` para la persistencia de usuarios.
+- **Cadena de conexión**: Configurada en `appsettings.json` apuntando a `(localdb)\MSSQLLocalDB`.
 
 ---
 
@@ -143,7 +152,9 @@ La aplicación utiliza SQL Server LocalDB mediante Entity Framework Core 8:
 - **ASP.NET Core Web API**
 - **Microsoft.AspNetCore.Authentication.JwtBearer (8.0.13)**
 - **System.IdentityModel.Tokens.Jwt (8.0.1)**
-- **Entity Framework Core 8 con SQL Server**
+- **Microsoft.EntityFrameworkCore.SqlServer (8.0.25)**
+- **Microsoft.EntityFrameworkCore.Design (8.0.13)**
+- **Entity Framework Core .NET Command-line Tools (dotnet-ef 10.0.14)**
 - **Swashbuckle.AspNetCore (10.3.1)**
-- **SQL Server LocalDB**
-- **Inyección de dependencias y patrón repositorio**
+- **SQL Server LocalDB (MSSQLLocalDB)**
+- **Inyección de dependencias (Scoped/Singleton) y patrón repositorio**

@@ -11,13 +11,17 @@ var builder = WebApplication.CreateBuilder(args);
 // ---------- SERVICIOS ----------
 builder.Services.AddControllers();
 
-// Repositorios
-builder.Services.AddSingleton<ProductoRepository>();
-builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+// Base de datos CafeteriaDbContext (Entity Framework Core con SQL Server)
+builder.Services.AddDbContext<CafeteriaDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("CafeteriaDb")));
 
-// Base de datos (existente)
+// Base de datos ApplicationDbContext (existente para usuarios)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Repositorios (AddScoped: una instancia por petición HTTP para trabajar con DbContext)
+builder.Services.AddScoped<ProductoRepository>();
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
 // Autenticación: "los usuarios se identifican con un JWT"
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -60,6 +64,9 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+// Inicialización de bases de datos, condiciones previas y validaciones
+DbInitializer.Initialize(app.Services);
 
 // ---------- PIPELINE ----------
 app.UseHttpsRedirection();

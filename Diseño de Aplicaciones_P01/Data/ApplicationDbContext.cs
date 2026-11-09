@@ -14,6 +14,8 @@ public class ApplicationDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
         modelBuilder.Entity<Usuario>(entity =>
         {
             entity.ToTable("Usuarios");
@@ -26,10 +28,13 @@ public class ApplicationDbContext : DbContext
             entity.Property(usuario => usuario.CorreoElectronicousuario)
                 .HasMaxLength(150)
                 .IsRequired();
+            entity.HasIndex(usuario => usuario.CorreoElectronicousuario)
+                .IsUnique();
             entity.Property(usuario => usuario.Contrasenausuario)
                 .HasMaxLength(255)
                 .IsRequired();
             entity.Property(usuario => usuario.Activo)
+                .HasDefaultValue(true)
                 .IsRequired();
         });
     }

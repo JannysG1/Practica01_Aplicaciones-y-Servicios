@@ -1,10 +1,19 @@
-﻿namespace Diseño_de_Aplicaciones_P01.model
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Diseño_de_Aplicaciones_P01.model;
+
+public class Producto
 {
-    public class Producto
-    {
-        public int Id { get; set; }
-        public string Nombre { get; set; } = string.Empty;
-        public decimal Precio { get; set; }
-        public bool Activo { get; set; }
-    }
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public int Id { get; set; }
+
+    [Required]
+    [MaxLength(100)]
+    public string Nombre { get; set; } = string.Empty;
+
+    public decimal Precio { get; set; }
+
+    public bool Activo { get; set; }
 }

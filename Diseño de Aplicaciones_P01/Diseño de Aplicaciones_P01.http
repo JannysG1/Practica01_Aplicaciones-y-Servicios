@@ -1,6 +1,190 @@
-@Diseño_de_Aplicaciones_P01_HostAddress = http://localhost:5214
+@HostAddress = http://localhost:5214
 
-GET {{Diseño_de_Aplicaciones_P01_HostAddress}}/weatherforecast/
+### 1. Login como Administrador (admin / 1234 -> Rol Admin)
+# @name loginAdmin
+POST {{HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin",
+  "password": "1234"
+}
+
+### Guardar token de Admin
+@tokenAdmin = {{loginAdmin.response.body.token}}
+
+### 2. Login como Cliente/Usuario (cliente / 1234 -> Rol Usuario)
+# @name loginCliente
+POST {{HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "usuario": "cliente",
+  "password": "1234"
+}
+
+### Guardar token de Cliente
+@tokenCliente = {{loginCliente.response.body.token}}
+
+
+### ====================================================================
+### PRUEBAS DE USUARIOS (ADMIN TIENE CONTROL TOTAL Y VALIDACIONES)
+### ====================================================================
+
+### 3. GET Usuarios con Admin -> 200 OK (Lista todos los usuarios)
+GET {{HostAddress}}/api/Usuarios
+Authorization: Bearer {{tokenAdmin}}
 Accept: application/json
 
-###
+### 4. GET Usuarios con Cliente -> 200 OK (Consulta permitida a Usuario)
+GET {{HostAddress}}/api/Usuarios
+Authorization: Bearer {{tokenCliente}}
+Accept: application/json
+
+### 5. POST Crear Usuario con Cliente -> 403 Forbidden (Solo Admin puede registrar)
+POST {{HostAddress}}/api/Usuarios
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "nombreUsuario": "Intruso",
+  "correoElectronicousuario": "intruso@correo.com",
+  "contrasenausuario": "1234",
+  "activo": true
+}
+
+### 6. POST Crear Usuario con Admin (Validación: datos correctos) -> 201 Created
+# @name crearUsuario
+POST {{HostAddress}}/api/Usuarios
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "nombreUsuario": "Nuevo Empleado",
+  "correoElectronicousuario": "empleado@cafeteria.com",
+  "contrasenausuario": "segura123",
+  "activo": true
+}
+
+### Guardar id del usuario creado
+@usuarioId = {{crearUsuario.response.body.idUsuario}}
+
+### 7. POST Crear Usuario con Correo Duplicado -> 409 Conflict (Validación BDD / Regla)
+POST {{HostAddress}}/api/Usuarios
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "nombreUsuario": "Duplicado",
+  "correoElectronicousuario": "empleado@cafeteria.com",
+  "contrasenausuario": "otra123",
+  "activo": true
+}
+
+### 8. POST Crear Usuario con Datos Inválidos -> 400 Bad Request
+POST {{HostAddress}}/api/Usuarios
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "nombreUsuario": "",
+  "correoElectronicousuario": "correo-no-valido",
+  "contrasenausuario": "1",
+  "activo": true
+}
+
+### 9. GET Usuario por Id con Admin -> 200 OK
+GET {{HostAddress}}/api/Usuarios/{{usuarioId}}
+Authorization: Bearer {{tokenAdmin}}
+Accept: application/json
+
+### 10. PUT Actualizar Usuario con Cliente -> 403 Forbidden (Solo Admin)
+PUT {{HostAddress}}/api/Usuarios/{{usuarioId}}
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "nombreUsuario": "Intento Modificar",
+  "correoElectronicousuario": "modificado@cafeteria.com",
+  "activo": true
+}
+
+### 11. PUT Actualizar Usuario con Admin -> 204 No Content
+PUT {{HostAddress}}/api/Usuarios/{{usuarioId}}
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "nombreUsuario": "Empleado Actualizado",
+  "correoElectronicousuario": "empleado.actualizado@cafeteria.com",
+  "contrasenausuario": "nuevaClave456",
+  "activo": true
+}
+
+### 12. DELETE Usuario con Cliente -> 403 Forbidden (Solo Admin)
+DELETE {{HostAddress}}/api/Usuarios/{{usuarioId}}
+Authorization: Bearer {{tokenCliente}}
+
+### 13. DELETE Usuario con Admin -> 204 No Content
+DELETE {{HostAddress}}/api/Usuarios/{{usuarioId}}
+Authorization: Bearer {{tokenAdmin}}
+
+
+### ====================================================================
+### PRUEBAS DE PRODUCTOS CON ENTITY FRAMEWORK CORE & SQL SERVER
+### ====================================================================
+
+### 14. GET Productos con Admin -> 200 OK
+GET {{HostAddress}}/api/Productos
+Authorization: Bearer {{tokenAdmin}}
+Accept: application/json
+
+### 15. POST Crear Producto con Admin -> 201 Created
+# @name crearProducto
+POST {{HostAddress}}/api/Productos
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "nombre": "Café Moca Especial",
+  "precio": 3.75,
+  "activo": true
+}
+
+### Guardar id del producto creado
+@productoId = {{crearProducto.response.body.id}}
+
+### 16. GET Producto por Id
+GET {{HostAddress}}/api/Productos/{{productoId}}
+Authorization: Bearer {{tokenAdmin}}
+Accept: application/json
+
+### 17. PUT Actualizar Producto -> 204 No Content
+PUT {{HostAddress}}/api/Productos/{{productoId}}
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "nombre": "Café Moca Supremo",
+  "precio": 4.00,
+  "activo": true
+}
+
+### 18. POST Crear Producto con Cliente (Usuario) -> 403 Forbidden
+POST {{HostAddress}}/api/Productos
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "nombre": "Capuchino Prohibido",
+  "precio": 3.50,
+  "activo": true
+}
+
+### 19. DELETE Producto con Cliente (Usuario) -> 403 Forbidden
+DELETE {{HostAddress}}/api/Productos/{{productoId}}
+Authorization: Bearer {{tokenCliente}}
+
+### 20. DELETE Producto con Admin -> 204 No Content
+DELETE {{HostAddress}}/api/Productos/{{productoId}}
+Authorization: Bearer {{tokenAdmin}}
