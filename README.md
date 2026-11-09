@@ -1,134 +1,138 @@
-# Diseño de Aplicaciones P01
+# Diseño de Aplicaciones P01 - API REST con ASP.NET Core & JWT
 
 ## ¿Qué es el proyecto?
 
-Este proyecto es una API REST desarrollada con ASP.NET Core sobre .NET 8. Su función principal es administrar usuarios mediante operaciones HTTP de consulta, búsqueda, registro y eliminación.
+Este proyecto es una API REST desarrollada con ASP.NET Core sobre .NET 8. Proporciona administración de usuarios conectada a SQL Server y un sistema de autenticación y autorización mediante **JSON Web Tokens (JWT)** con control de acceso basado en roles para proteger recursos sensibles (como el catálogo de productos).
 
-La API no contiene una interfaz gráfica. Expone endpoints que pueden ser consumidos por aplicaciones web, aplicaciones móviles, clientes de escritorio o herramientas como Swagger y Postman.
+La API no contiene una interfaz gráfica tradicional; expone endpoints HTTP consumibles por aplicaciones web (SPA/Blazor), aplicaciones móviles, clientes de escritorio o herramientas como Swagger UI y Postman.
 
-## ¿Qué hace?
+---
 
-La API administra usuarios con la siguiente información:
+## Endpoints Disponibles
 
-- Identificador del usuario.
-- Nombre.
-- Correo electrónico.
-- Contraseña.
-- Estado activo o inactivo.
+### 1. Autenticación (`api/Auth`)
 
-Los endpoints disponibles pertenecen a la ruta `api/Usuarios`:
+| Método | Ruta | Autorización | Función |
+|---|---|---|---|
+| `POST` | `/api/Auth/login` | Pública (`[AllowAnonymous]`) | Recibe credenciales (`usuario`, `password`), valida y genera el token JWT con sus claims correspondientes. |
 
-| Método | Ruta | Función |
-|---|---|---|
-| `GET` | `/api/Usuarios` | Obtiene todos los usuarios. |
-| `GET` | `/api/Usuarios/{id}` | Busca un usuario por su identificador. |
-| `POST` | `/api/Usuarios` | Registra un usuario nuevo. |
-| `DELETE` | `/api/Usuarios/{id}` | Elimina un usuario por su identificador. |
+### 2. Gestión de Productos (`api/Productos`)
 
-## ¿Cómo funciona operativamente?
+| Método | Ruta | Autorización | Función |
+|---|---|---|---|
+| `GET` | `/api/Productos` | Requiere Token JWT (`[Authorize]`) | Obtiene la lista de productos disponibles. |
+| `GET` | `/api/Productos/{id}` | Requiere Token JWT (`[Authorize]`) | Obtiene un producto por su identificador. |
+| `POST` | `/api/Productos` | Requiere Rol `Admin` (`[Authorize(Roles = "Admin")]`) | Agrega un nuevo producto al catálogo. |
+| `DELETE` | `/api/Productos/{id}` | Requiere Rol `Admin` (`[Authorize(Roles = "Admin")]`) | Elimina un producto por su identificador. |
 
-Cuando la aplicación inicia, ASP.NET Core configura los controladores, Swagger, Entity Framework Core y la conexión con SQL Server.
+### 3. Gestión de Usuarios (`api/Usuarios`)
 
-Cuando un cliente realiza una solicitud HTTP, el flujo operativo es el siguiente:
+| Método | Ruta | Autorización | Función |
+|---|---|---|---|
+| `GET` | `/api/Usuarios` | Pública | Obtiene todos los usuarios registrados en SQL Server. |
+| `GET` | `/api/Usuarios/{id}` | Pública | Busca un usuario por su identificador. |
+| `POST` | `/api/Usuarios` | Pública | Registra un usuario nuevo en la base de datos. |
+| `DELETE` | `/api/Usuarios/{id}` | Pública | Elimina un usuario por su identificador. |
 
-1. La solicitud llega a `UsuariosController` mediante la ruta correspondiente.
-2. El controlador recibe una instancia de `IUsuarioRepository` mediante inyección de dependencias.
-3. El controlador delega la operación al repositorio.
-4. `UsuarioRepository` utiliza `ApplicationDbContext` para comunicarse con SQL Server.
-5. Entity Framework Core convierte las operaciones del repositorio en consultas SQL.
-6. SQL Server ejecuta la consulta sobre la tabla `Usuarios`.
-7. El resultado regresa al repositorio y posteriormente al controlador.
-8. El controlador devuelve una respuesta HTTP al cliente.
+---
 
-El controlador no accede directamente a la base de datos. Esta separación permite mantener el código modular y cambiar la implementación del repositorio sin modificar los endpoints.
+## Autenticación y Autorización con JWT
 
-## Organización de los componentes
+### ¿Cómo funciona el flujo de JWT?
 
-### `Controllers/UsuarioController.cs`
+1. **Petición de Login**: El cliente envía sus credenciales (`Usuario` y `Password`) al endpoint `POST /api/Auth/login`.
+2. **Generación del Token**: Si las credenciales son válidas, la API genera un token JWT firmado mediante el algoritmo `HmacSha256` con una clave secreta simétrica. Dentro del token se almacenan los **claims**:
+   - `sub`: Identificador/nombre del usuario.
+   - `http://schemas.microsoft.com/ws/2008/06/identity/claims/role`: Rol asignado (ej. `Admin`).
+   - `jti`: Identificador único del token (GUID) para prevenir ataques de repetición.
+3. **Uso del Token en Peticiones**: En las peticiones posteriores, el cliente envía el token en el encabezado HTTP:
+   ```http
+   Authorization: Bearer <token_jwt>
+   ```
+4. **Validación Automática**: El middleware de autenticación (`JwtBearer`) en `Program.cs` intercepta la petición, verifica la firma con la clave simétrica, el emisor (`Issuer`), la audiencia (`Audience`) y la fecha de expiración (`Lifetime`). Si es válido, extrae los claims del usuario y permite la ejecución; de lo contrario, responde automáticamente con un código de error:
+   - **`401 Unauthorized`**: Si la petición no tiene token, está vencido o la firma es inválida.
+   - **`403 Forbidden`**: Si el token es válido pero el usuario no tiene el rol exigido por la acción (ej. un usuario sin rol `Admin` intentando ejecutar `DELETE`).
 
-Define los endpoints HTTP de usuarios. Controla las solicitudes, las respuestas y los códigos HTTP, como `200 OK`, `204 No Content` y `404 Not Found`.
+### Configuración en `appsettings.json`
 
-### `recursos/IUsuarioRepository.cs`
-
-Define el contrato que debe cumplir cualquier repositorio de usuarios. El controlador depende de esta interfaz y no de una implementación concreta.
-
-### `recursos/repos_usuario.cs`
-
-Contiene la implementación `UsuarioRepository`. Ejecuta las operaciones de consulta, inserción y eliminación mediante Entity Framework Core.
-
-### `Data/ApplicationDbContext.cs`
-
-Es el contexto de Entity Framework Core. Representa la conexión entre la aplicación y la base de datos y define el mapeo de la entidad `Usuario` con la tabla `Usuarios`.
-
-### `model/Usuario.cs`
-
-Representa la entidad de usuario utilizada por la API y mapeada a la tabla de SQL Server.
-
-### `Program.cs`
-
-Configura la aplicación, registra los servicios y establece la inyección de dependencias:
-
-- `ApplicationDbContext` se registra para usar SQL Server.
-- `IUsuarioRepository` se vincula con `UsuarioRepository`.
-- Los controladores se habilitan para atender las solicitudes HTTP.
-
-## Conexión con SQL Server
-
-La conexión se configura en `appsettings.json` mediante `DefaultConnection`:
+Los parámetros del token se configuran en el archivo `appsettings.json` para facilitar el cambio entre entornos:
 
 ```json
 {
   "ConnectionStrings": {
-	"DefaultConnection": "Server=(localdb)\\MSSQLLocalDB;Database=AplicacionesP01Db;Trusted_Connection=True;TrustServerCertificate=True;"
+    "DefaultConnection": "Server=(localdb)\\MSSQLLocalDB;Database=AplicacionesP01Db;Trusted_Connection=True;TrustServerCertificate=True;"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "Jwt": {
+    "Key": "esta-es-una-clave-secreta-de-mas-de-32-caracteres-123",
+    "Issuer": "CafeteriaBackend",
+    "Audience": "CafeteriaClientes"
   }
 }
 ```
 
-La cadena utiliza:
+---
 
-- `Server=(localdb)\\MSSQLLocalDB`: instancia local de SQL Server LocalDB.
-- `Database=AplicacionesP01Db`: base de datos utilizada por la API.
-- `Trusted_Connection=True`: autenticación de Windows.
-- `TrustServerCertificate=True`: permite la conexión local sin validar un certificado del servidor.
+## Configuración de Swagger con Soporte para JWT
 
-En `Program.cs`, Entity Framework Core lee esta cadena y configura el proveedor de SQL Server:
+Swagger UI incluye soporte para esquemas de seguridad HTTP `Bearer`, lo que permite probar los endpoints directamente desde el navegador:
 
-```csharp
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-	options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-```
+1. Al abrir la aplicación en modo desarrollo, la URL raíz `/` redirige automáticamente a `/swagger`.
+2. En la interfaz se presenta el botón **Authorize**.
+3. Al ingresar el token recibido en el login (únicamente la cadena del token, sin la palabra "Bearer"), Swagger lo añade a todas las peticiones salientes en el encabezado `Authorization`.
 
-El contexto se inyecta en `UsuarioRepository`. Por esta razón, cada operación del repositorio trabaja directamente con la base de datos configurada en `DefaultConnection`.
+---
 
-## Base de datos
+## Organización de los Componentes
 
-El script `Diseño de Aplicaciones_P01/Scripts/InicializarBaseDeDatos.sql` crea la base de datos `AplicacionesP01Db` y la tabla `Usuarios` con la estructura esperada por la aplicación.
+### Controladores (`Controllers/`)
+- **`AuthController.cs`**: Controlador que gestiona la autenticación, validación de credenciales y generación del token JWT firmado con claims y expiración.
+- **`ProductosController.cs`**: Controlador protegido mediante atributos `[Authorize]` y `[Authorize(Roles = "Admin")]` para ilustrar el control de acceso en la API.
+- **`UsuarioController.cs`**: Controlador que gestiona las operaciones CRUD de los usuarios comunicándose con el repositorio.
 
-La tabla contiene:
+### Modelos (`model/`)
+- **`Usuario.cs`**: Representa la entidad de usuario mapeada a la tabla `Usuarios` en SQL Server.
+- **`Producto.cs`**: Representa la entidad de producto para el catálogo.
 
-- `IdUsuario`: clave primaria autoincremental.
-- `NombreUsuario`: nombre del usuario.
-- `CorreoElectronicousuario`: correo electrónico.
-- `Contrasenausuario`: contraseña almacenada.
-- `Activo`: estado del usuario.
+### Repositorios y Recursos (`recursos/`)
+- **`IUsuarioRepository.cs`**: Contrato para el acceso y manipulación de datos de usuarios.
+- **`repos_usuario.cs`**: Implementación del repositorio de usuarios utilizando `ApplicationDbContext`.
+- **`ProductoRepository.cs`**: Repositorio de productos registrado como Singleton para demostración de operaciones en memoria.
 
-El script también agrega tres registros iniciales para que la API pueda consultar datos desde el primer uso. Si la tabla `Usuarios` ya existe, el script la elimina y la vuelve a crear para garantizar que sus columnas coincidan con el modelo de la aplicación.
+### Acceso a Datos (`Data/`)
+- **`ApplicationDbContext.cs`**: Contexto de Entity Framework Core que configura y gestiona el mapeo de entidades con SQL Server LocalDB.
 
-## Persistencia de datos
+### Configuración Global (`Program.cs`)
+- Registro de controladores y repositorios en el contenedor de inyección de dependencias.
+- Registro del contexto de base de datos con SQL Server.
+- Configuración del servicio de autenticación JWT (`AddAuthentication` y `AddJwtBearer`).
+- Configuración de autorización (`AddAuthorization`).
+- Configuración de Swagger con esquemas de seguridad OpenAPI (`Bearer`).
+- Definición del orden de los middlewares en el pipeline HTTP (`UseHttpsRedirection`, Swagger, `UseAuthentication`, `UseAuthorization`, `MapControllers`).
 
-Las operaciones se almacenan permanentemente en SQL Server:
+---
 
-- Las consultas utilizan `AsNoTracking()` cuando los datos solo se leen.
-- Los nuevos usuarios se agregan mediante `DbSet.Add` y `SaveChanges()`.
-- Los usuarios se eliminan mediante `DbSet.Remove` y `SaveChanges()`.
-- Las consultas dejan de depender de una lista en memoria y utilizan la tabla `Usuarios`.
+## Persistencia y Base de Datos SQL Server
 
-## Tecnologías utilizadas
+La aplicación utiliza SQL Server LocalDB mediante Entity Framework Core 8:
+- Cadena de conexión: `DefaultConnection` apuntando a `(localdb)\MSSQLLocalDB` y base de datos `AplicacionesP01Db`.
+- Script de inicialización: `Diseño de Aplicaciones_P01/Scripts/InicializarBaseDeDatos.sql` para crear la base de datos y la tabla `Usuarios` con datos de prueba iniciales.
 
-- .NET 8.
-- ASP.NET Core Web API.
-- Entity Framework Core 8.
-- SQL Server LocalDB.
-- Swagger/OpenAPI.
-- Inyección de dependencias.
-- Patrón repositorio mediante interfaces.
+---
+
+## Tecnologías Utilizadas
+
+- **.NET 8.0 SDK**
+- **ASP.NET Core Web API**
+- **Microsoft.AspNetCore.Authentication.JwtBearer (8.0.13)**
+- **System.IdentityModel.Tokens.Jwt (8.0.1)**
+- **Entity Framework Core 8 con SQL Server**
+- **Swashbuckle.AspNetCore (10.3.1)**
+- **SQL Server LocalDB**
+- **Inyección de dependencias y patrón repositorio**
