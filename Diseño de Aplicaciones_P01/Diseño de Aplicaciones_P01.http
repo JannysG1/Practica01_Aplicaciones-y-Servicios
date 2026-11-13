@@ -146,3 +146,53 @@ Authorization: Bearer {{tokenCliente}}
 ### 15. DELETE Producto con Admin (Rol: Admin) -> 204 No Content
 DELETE {{HostAddress}}/api/Productos/{{productoId}}
 Authorization: Bearer {{tokenAdmin}}
+
+### ====================================================================
+### EXAMEN PRÁCTICO CORTO: PPP04 - PROVEEDORES (ADMIN PROTEGIDO)
+### ====================================================================
+
+### 16. Login Admin (admin / 1234) -> 200 OK
+# @name loginAdminExamen
+POST {{HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin",
+  "password": "1234"
+}
+
+### Guardar token obtenido para examen
+@tokenAdminExamen = {{loginAdminExamen.response.body.token}}
+
+### 17. POST Proveedores sin autenticación -> 401 Unauthorized
+POST {{HostAddress}}/api/Proveedores
+Content-Type: application/json
+
+{
+  "nombre": "Distribuidora La Costa",
+  "telefono": "0991234567",
+  "activo": true
+}
+
+### 18. POST Proveedores con Cliente (Rol: Usuario) -> 403 Forbidden
+POST {{HostAddress}}/api/Proveedores
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "nombre": "Distribuidora La Costa",
+  "telefono": "0991234567",
+  "activo": true
+}
+
+### 19. POST Proveedores con Admin (Guion de Prueba) -> 201 Created
+POST {{HostAddress}}/api/Proveedores
+Authorization: Bearer {{tokenAdminExamen}}
+Content-Type: application/json
+
+{
+  "nombre": "Distribuidora La Costa",
+  "telefono": "0991234567",
+  "activo": true
+}
+

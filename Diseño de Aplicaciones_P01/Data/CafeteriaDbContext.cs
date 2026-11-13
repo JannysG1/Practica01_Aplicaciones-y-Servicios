@@ -14,6 +14,7 @@ public class CafeteriaDbContext : IdentityDbContext<ApplicationUser>
     }
 
     public DbSet<Producto> Productos => Set<Producto>();
+    public DbSet<Proveedor> Proveedores => Set<Proveedor>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,6 +34,12 @@ public class CafeteriaDbContext : IdentityDbContext<ApplicationUser>
                 .IsRequired();
             entity.Property(p => p.Activo)
                 .IsRequired();
+        });
+
+        modelBuilder.Entity<Proveedor>(entity =>
+        {
+            entity.Property(p => p.Nombre).HasMaxLength(100);
+            entity.Property(p => p.Telefono).HasMaxLength(20);
         });
     }
 }

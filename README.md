@@ -179,3 +179,42 @@ El proyecto incluye el archivo `Diseño de Aplicaciones_P01.http` completamente 
 - **Swashbuckle.AspNetCore (10.3.1)**
 - **SQL Server LocalDB (MSSQLLocalDB)**
 - **User Secrets Manager**
+
+---
+
+## Examen Práctico Corto (PPP04) - Módulo Proveedores & Evidencia de Persistencia
+
+### 1. Requerimientos Implementados
+- **Entidad `Models/Proveedor`**: Con propiedades `Id` (int identity), `Nombre` (nvarchar(100) not null), `Telefono` (nvarchar(20) null) y `Activo` (bit not null).
+- **`CafeteriaDbContext`**: Registrada la propiedad `public DbSet<Proveedor> Proveedores => Set<Proveedor>();` y configuradas longitudes en `OnModelCreating` (`Nombre: HasMaxLength(100)`, `Telefono: HasMaxLength(20)`).
+- **Migración Code-First**: Migración `AgregarProveedores` creada y aplicada en base de datos `CafeteriaDb`.
+- **`ProveedoresController`**: Endpoint `POST /api/Proveedores` protegido con `[Authorize(Roles = "Admin")]`.
+- **Persistencia Directa**: Guarda en base de datos mediante `_context.Proveedores.Add` y `_context.SaveChangesAsync()`, retornando `201 CreatedAtAction(...)`.
+
+### 2. Guion de Prueba Oficial y Evidencia de Persistencia
+
+| Paso | Acción | Resultado Esperado | Resultado Obtenido | Estado |
+|:---:|:---|:---|:---|:---:|
+| **1** | Login `admin / 1234` &rarr; Authorize | Token JWT emitido con rol `Admin` | Token generado exitosamente y cargado en Swagger | ✅ Aprobado |
+| **2** | `POST /api/Proveedores` con `{"nombre":"Distribuidora La Costa","telefono":"0991234567","activo":true}` | **201 Created** con `"id": 1` | **201 Created** con payload JSON e Id generado | ✅ Aprobado |
+| **3** | SQL Server Object Explorer &rarr; `dbo.Proveedores` &rarr; Ver datos | 1 fila con los datos enviados | 1 fila visible en SQL Server con Id=1 | ✅ Aprobado |
+
+#### Evidencia de Respuesta Swagger (201 Created):
+```json
+{
+  "id": 1,
+  "nombre": "Distribuidora La Costa",
+  "telefono": "0991234567",
+  "activo": true
+}
+```
+
+#### Evidencia de Consulta en SQL Server (`dbo.Proveedores`):
+```text
+Id          Nombre                                                                                               Telefono             Activo
+----------- ---------------------------------------------------------------------------------------------------- -------------------- ------
+          1 Distribuidora La Costa                                                                               0991234567                1
+
+(1 rows affected)
+```
+
