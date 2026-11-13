@@ -1,10 +1,12 @@
+using Diseño_de_Aplicaciones_P01.Models;
 using Diseño_de_Aplicaciones_P01.model;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
 namespace Diseño_de_Aplicaciones_P01.Data;
 
-public class CafeteriaDbContext : DbContext
+public class CafeteriaDbContext : IdentityDbContext<ApplicationUser>
 {
     public CafeteriaDbContext(DbContextOptions<CafeteriaDbContext> options)
         : base(options)
@@ -15,7 +17,7 @@ public class CafeteriaDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
+        base.OnModelCreating(modelBuilder); // NUEVA: siempre primero
 
         modelBuilder.Entity<Producto>(entity =>
         {
