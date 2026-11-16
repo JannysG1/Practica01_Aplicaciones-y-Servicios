@@ -28,9 +28,10 @@ builder.Services.AddScoped<IProductoRepository, ProductoService>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioService>();
 builder.Services.AddScoped<IProveedorRepository, ProveedorService>();
 
-// Servicios de Autenticación y Generación de Token JWT (SOLID: SRP y DIP)
+// Servicios de Autenticación, Token JWT y Gestión Dinámica de Roles (SOLID: SRP y DIP)
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IRolService, RolService>();
 
 // Registro de ASP.NET Core Identity Core (Paso 3)
 builder.Services

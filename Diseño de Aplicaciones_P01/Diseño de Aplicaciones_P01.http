@@ -196,3 +196,46 @@ Content-Type: application/json
   "activo": true
 }
 
+
+
+### ====================================================================
+### GESTIÓN DINÁMICA DE ROLES Y PERMISOS (SOLO ADMIN - SIN CÓDIGO QUEMADO)
+### ====================================================================
+
+### 20. GET Roles del sistema con Admin -> 200 OK
+GET {{HostAddress}}/api/Roles
+Authorization: Bearer {{tokenAdmin}}
+Accept: application/json
+
+### 21. POST Crear Nuevo Rol dinámico (ej. Supervisor) con Admin -> 201 Created
+POST {{HostAddress}}/api/Roles
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "nombreRol": "Supervisor"
+}
+
+### 22. POST Crear Nuevo Rol con Cliente (Rol: Usuario) -> 403 Forbidden
+POST {{HostAddress}}/api/Roles
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "nombreRol": "Gerente"
+}
+
+### 23. POST Asignar nuevo Rol dinámico a Usuario con Admin -> 200 OK
+POST {{HostAddress}}/api/Roles/asignar
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "usuario": "cliente1",
+  "rol": "Supervisor"
+}
+
+### 24. GET Roles del usuario cliente1 -> 200 OK (contiene Usuario y Supervisor)
+GET {{HostAddress}}/api/Roles/usuario/cliente1
+Authorization: Bearer {{tokenAdmin}}
+Accept: application/json
