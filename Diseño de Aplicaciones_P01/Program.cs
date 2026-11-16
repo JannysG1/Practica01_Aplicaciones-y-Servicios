@@ -2,7 +2,8 @@ using System.Text;
 using System.Security.Claims;
 using Diseño_de_Aplicaciones_P01.Data;
 using Diseño_de_Aplicaciones_P01.Models;
-using Diseño_de_Aplicaciones_P01.recursos;
+using Diseño_de_Aplicaciones_P01.Repositories;
+using Diseño_de_Aplicaciones_P01.Service;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -22,9 +23,10 @@ builder.Services.AddDbContext<CafeteriaDbContext>(options =>
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Repositorios (AddScoped: una instancia por petición HTTP para trabajar con DbContext)
-builder.Services.AddScoped<ProductoRepository>();
-builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+// Inyección de Dependencias: Interfaces en Repositories, Clases que conectan a la BD en Service
+builder.Services.AddScoped<IProductoRepository, ProductoService>();
+builder.Services.AddScoped<IUsuarioRepository, UsuarioService>();
+builder.Services.AddScoped<IProveedorRepository, ProveedorService>();
 
 // Registro de ASP.NET Core Identity Core (Paso 3)
 builder.Services

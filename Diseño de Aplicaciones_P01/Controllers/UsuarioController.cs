@@ -1,6 +1,6 @@
 ﻿using Diseño_de_Aplicaciones_P01.DTOs;
 using Diseño_de_Aplicaciones_P01.model;
-using Diseño_de_Aplicaciones_P01.recursos;
+using Diseño_de_Aplicaciones_P01.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,26 +11,26 @@ namespace Diseño_de_Aplicaciones_P01.Controllers;
 [Route("api/[controller]")]
 public class UsuariosController : ControllerBase
 {
-    private readonly IUsuarioRepository _repositorio;
+    private readonly IUsuarioRepository _repo;
 
-    public UsuariosController(IUsuarioRepository repositorio)
+    public UsuariosController(IUsuarioRepository repo)
     {
-        _repositorio = repositorio;
+        _repo = repo;
     }
 
     [HttpGet]
     [Authorize(Roles = "Admin,Usuario")]
-    public ActionResult<ICollection<Usuario>> ObtenerUsuarios()
+    public async Task<ActionResult<List<Usuario>>> ObtenerUsuarios()
     {
-        var usuarios = _repositorio.ObtenerUsuarios();
+        var usuarios = await _repo.ObtenerTodosAsync();
         return Ok(usuarios);
     }
 
     [HttpGet("{id}")]
     [Authorize(Roles = "Admin,Usuario")]
-    public ActionResult<Usuario> BuscarPorId(int id)
+    public async Task<ActionResult<Usuario>> BuscarPorId(int id)
     {
-        var usuario = _repositorio.BuscarPorId(id);
+        var usuario = await _repo.BuscarPorIdAsync(id);
 
         if (usuario == null)
         {
@@ -41,74 +41,62 @@ public class UsuariosController : ControllerBase
 
     [HttpPost]
     [Authorize(Roles = "Admin")]
-    public ActionResult AgregarUsuario([FromBody] UsuarioCreateDTO dto)
+    public async Task<ActionResult> AgregarUsuario([FromBody] UsuarioCreateDTO dto)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
 
-        if (_repositorio.ExisteCorreo(dto.CorreoElectronicousuario))
+        try
         {
-            return Conflict(new { mensaje = $"Ya existe un usuario registrado con el correo '{dto.CorreoElectronicousuario}'." });
+            var nuevoUsuario = await _repo.CrearAsync(dto);
+            return CreatedAtAction(nameof(BuscarPorId), new { id = nuevoUsuario.IdUsuario }, nuevoUsuario);
         }
-
-        var nuevoUsuario = new Usuario
+        catch (ArgumentException ex)
         {
-            NombreUsuario = dto.NombreUsuario.Trim(),
-            CorreoElectronicousuario = dto.CorreoElectronicousuario.Trim().ToLower(),
-            Contrasenausuario = dto.Contrasenausuario,
-            Activo = dto.Activo
-        };
-
-        _repositorio.AgregarUsuario(nuevoUsuario);
-
-        return CreatedAtAction(nameof(BuscarPorId), new { id = nuevoUsuario.IdUsuario }, nuevoUsuario);
+            return BadRequest(new { mensaje = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { mensaje = ex.Message });
+        }
     }
 
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin")]
-    public ActionResult ActualizarUsuario(int id, [FromBody] UsuarioUpdateDTO dto)
+    public async Task<ActionResult> ActualizarUsuario(int id, [FromBody] UsuarioUpdateDTO dto)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
 
-        var existente = _repositorio.BuscarPorId(id);
-        if (existente == null)
+        try
         {
-            return NotFound(new { mensaje = $"No se puede actualizar: Usuario con ID {id} no encontrado." });
+            bool actualizado = await _repo.ActualizarAsync(id, dto);
+            if (!actualizado)
+            {
+                return NotFound(new { mensaje = $"No se puede actualizar: Usuario con ID {id} no encontrado." });
+            }
+
+            return NoContent();
         }
-
-        if (_repositorio.ExisteCorreo(dto.CorreoElectronicousuario, id))
+        catch (ArgumentException ex)
         {
-            return Conflict(new { mensaje = $"El correo '{dto.CorreoElectronicousuario}' ya está en uso por otro usuario." });
+            return BadRequest(new { mensaje = ex.Message });
         }
-
-        var usuarioActualizar = new Usuario
+        catch (InvalidOperationException ex)
         {
-            IdUsuario = id,
-            NombreUsuario = dto.NombreUsuario.Trim(),
-            CorreoElectronicousuario = dto.CorreoElectronicousuario.Trim().ToLower(),
-            Contrasenausuario = string.IsNullOrWhiteSpace(dto.Contrasenausuario) ? existente.Contrasenausuario : dto.Contrasenausuario,
-            Activo = dto.Activo
-        };
-
-        bool actualizado = _repositorio.ActualizarUsuario(usuarioActualizar);
-        if (!actualizado)
-        {
-            return StatusCode(500, new { mensaje = "Ocurrió un error al actualizar el usuario." });
+            return Conflict(new { mensaje = ex.Message });
         }
-
-        return NoContent();
     }
 
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
-    public ActionResult EliminarPorId(int id)
+    public async Task<ActionResult> EliminarPorId(int id)
     {
-        bool eliminado = _repositorio.EliminarPorId(id);
+        bool eliminado = await _repo.EliminarPorIdAsync(id);
         if (!eliminado)
         {
             return NotFound(new { mensaje = $"No se puede eliminar: Usuario con ID {id} no encontrado." });
