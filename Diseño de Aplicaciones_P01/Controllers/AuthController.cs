@@ -1,92 +1,38 @@
-using Diseño_de_Aplicaciones_P01.Models;
+using Diseño_de_Aplicaciones_P01.DTOs;
+using Diseño_de_Aplicaciones_P01.Repositories;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 namespace Diseño_de_Aplicaciones_P01.Controllers;
-
-public record LoginRequest(string Usuario, string Password);
-public record RegisterRequest(string Usuario, string Email, string Password, string NombreCompleto);
 
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IConfiguration _config;
+    private readonly IAuthService _authService;
 
-    public AuthController(UserManager<ApplicationUser> userManager, IConfiguration config)
+    public AuthController(IAuthService authService)
     {
-        _userManager = userManager;
-        _config = config;
+        _authService = authService;
     }
 
     [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        var user = await _userManager.FindByNameAsync(request.Usuario)
-            ?? await _userManager.FindByEmailAsync(request.Usuario);
+        var resultado = await _authService.LoginAsync(request);
 
-        if (user == null)
+        if (!resultado.Exitoso)
         {
-            return Unauthorized(new { mensaje = "Usuario o contraseña incorrectos" });
+            return Unauthorized(new { mensaje = resultado.MensajeError });
         }
-
-        if (await _userManager.IsLockedOutAsync(user))
-        {
-            return Unauthorized(new { mensaje = "Cuenta bloqueada temporalmente. Intenta más tarde." });
-        }
-
-        bool passwordValido = await _userManager.CheckPasswordAsync(user, request.Password);
-        if (!passwordValido && (user.UserName?.Equals("admin", StringComparison.OrdinalIgnoreCase) == true) && (request.Password == "1234" || request.Password == "Admin123"))
-        {
-            passwordValido = true;
-        }
-
-        if (!passwordValido)
-        {
-            await _userManager.AccessFailedAsync(user);
-            return Unauthorized(new { mensaje = "Usuario o contraseña incorrectos" });
-        }
-
-        await _userManager.ResetAccessFailedCountAsync(user);
-
-        var roles = await _userManager.GetRolesAsync(user);
-
-        var claims = new List<Claim>
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-            new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
-
-        foreach (var rol in roles)
-        {
-            claims.Add(new Claim(ClaimTypes.Role, rol));
-        }
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var expira = DateTime.UtcNow.AddHours(1);
-
-        var token = new JwtSecurityToken(
-            issuer: _config["Jwt:Issuer"],
-            audience: _config["Jwt:Audience"],
-            claims: claims,
-            expires: expira,
-            signingCredentials: creds);
 
         return Ok(new
         {
-            token = new JwtSecurityTokenHandler().WriteToken(token),
-            expira,
-            usuario = user.UserName,
-            roles
+            token = resultado.Token,
+            expira = resultado.Expira,
+            usuario = resultado.Usuario,
+            roles = resultado.Roles
         });
     }
 
@@ -94,24 +40,17 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        var user = new ApplicationUser
-        {
-            UserName = request.Usuario,
-            Email = request.Email,
-            NombreCompleto = request.NombreCompleto,
-            LockoutEnabled = true
-        };
+        var resultado = await _authService.RegisterAsync(request);
 
-        var resultado = await _userManager.CreateAsync(user, request.Password);
-
-        if (!resultado.Succeeded)
+        if (!resultado.Exitoso)
         {
-            return BadRequest(new { errores = resultado.Errors.Select(e => e.Description) });
+            return BadRequest(new { errores = resultado.Errores });
         }
 
-        // El rol lo decide el servidor, nunca el cliente
-        await _userManager.AddToRoleAsync(user, "Usuario");
-
-        return Ok(new { mensaje = "Usuario registrado correctamente", usuario = user.UserName });
+        return Ok(new
+        {
+            mensaje = "Usuario registrado correctamente",
+            usuario = resultado.Usuario
+        });
     }
 }
