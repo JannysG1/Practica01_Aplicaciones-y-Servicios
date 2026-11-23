@@ -8,4 +8,5 @@ public interface IRolService
     Task<RoleResult> CrearRolAsync(string nombreRol);
     Task<RoleResult> AsignarRolAUsuarioAsync(string usuarioOEmail, string nombreRol);
     Task<IList<string>> ObtenerRolesDeUsuarioAsync(string usuarioOEmail);
+    Task<RoleResult> EliminarRolAsync(string nombreRol);
 }

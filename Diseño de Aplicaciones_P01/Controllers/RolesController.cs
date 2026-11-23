@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Diseño_de_Aplicaciones_P01.Controllers;
 
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin,SuperAdmin")]
 [ApiController]
 [Route("api/[controller]")]
 public class RolesController : ControllerBase
@@ -63,5 +63,17 @@ public class RolesController : ControllerBase
     {
         var roles = await _rolService.ObtenerRolesDeUsuarioAsync(usuario);
         return Ok(roles);
+    }
+
+    [HttpDelete("{nombreRol}")]
+    public async Task<IActionResult> EliminarRol(string nombreRol)
+    {
+        var resultado = await _rolService.EliminarRolAsync(nombreRol);
+        if (!resultado.Exitoso)
+        {
+            return BadRequest(new { mensaje = resultado.Mensaje, errores = resultado.Errores });
+        }
+
+        return Ok(new { mensaje = resultado.Mensaje });
     }
 }

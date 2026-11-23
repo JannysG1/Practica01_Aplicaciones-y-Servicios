@@ -5,14 +5,14 @@ namespace Diseño_de_Aplicaciones_P01.Data;
 
 public static class IdentitySeeder
 {
-    private static readonly string[] Roles = { "Admin", "Usuario" };
+    private static readonly string[] Roles = { "SuperAdmin", "Admin", "Usuario" };
 
     public static async Task SeedAsync(IServiceProvider services, IConfiguration config)
     {
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
 
-        // 1. Crear los roles si no existen
+        // 1. Crear los roles base del sistema si no existen
         foreach (var rol in Roles)
         {
             if (!await roleManager.RoleExistsAsync(rol))
@@ -38,7 +38,7 @@ public static class IdentitySeeder
             {
                 UserName = "admin",
                 Email = email,
-                NombreCompleto = "Administrador",
+                NombreCompleto = "Administrador Principal",
                 LockoutEnabled = true
             };
 
@@ -50,7 +50,12 @@ public static class IdentitySeeder
             }
         }
 
-        // 4. Asignar el rol Admin si todavía no lo tiene
+        // 4. Asignar los roles de más alto rango (SuperAdmin y Admin) al usuario administrador
+        if (!await userManager.IsInRoleAsync(admin, "SuperAdmin"))
+        {
+            await userManager.AddToRoleAsync(admin, "SuperAdmin");
+        }
+
         if (!await userManager.IsInRoleAsync(admin, "Admin"))
         {
             await userManager.AddToRoleAsync(admin, "Admin");
