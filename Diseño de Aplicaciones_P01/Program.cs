@@ -33,6 +33,9 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IRolService, RolService>();
 
+// Servicio de Generación de Tablas Matemáticas y Funciones Trigonométricas (SOLID: SRP, ISP y DIP)
+builder.Services.AddScoped<ITablasCalculoService, TablasCalculoService>();
+
 // Registro de ASP.NET Core Identity Core (Paso 3)
 builder.Services
     .AddIdentityCore<ApplicationUser>(options =>
