@@ -37,6 +37,26 @@ La API expone endpoints HTTP consumibles por clientes web (Single Page Applicati
 | `PUT` | `/api/Usuarios/{id}` | Requiere Rol `Admin` (`[Authorize(Roles = "Admin")]`) | Solo `Admin` puede actualizar usuarios existentes. |
 | `DELETE` | `/api/Usuarios/{id}` | Requiere Rol `Admin` (`[Authorize(Roles = "Admin")]`) | Solo `Admin` puede eliminar usuarios. |
 
+### 4. Gestión Dinámica de Roles (`api/Roles`)
+
+| Método | Ruta | Autorización | Función |
+|---|---|---|---|
+| `GET` | `/api/Roles` | Requiere Rol `Admin` o `SuperAdmin` | Obtiene el catálogo de roles disponibles en el sistema. |
+| `POST` | `/api/Roles` | Requiere Rol `Admin` o `SuperAdmin` | Crea un nuevo rol dinámico en Identity validando unicidad. |
+| `POST` | `/api/Roles/asignar` | Requiere Rol `Admin` o `SuperAdmin` | Asocia un rol existente a un usuario especificado. |
+| `GET` | `/api/Roles/usuario/{usuario}` | Requiere Rol `Admin` o `SuperAdmin` | Consulta la lista de roles asignados a un usuario específico. |
+
+### 5. Cómputo de Tablas Matemáticas y Trigonométricas (`api/TablasCalculo`)
+
+| Método | Ruta | Autorización | Función |
+|---|---|---|---|
+| `GET` | `/api/TablasCalculo/potencias` | Pública (`[AllowAnonymous]`) | Genera tabla de potencias (base y rango de exponentes por query params). |
+| `POST` | `/api/TablasCalculo/potencias` | Pública (`[AllowAnonymous]`) | Genera tabla de potencias a partir de un cuerpo JSON validado. |
+| `GET` | `/api/TablasCalculo/potencias/texto` | Pública (`[AllowAnonymous]`) | Retorna la tabla de potencias en texto plano ASCII tabulado. |
+| `GET` | `/api/TablasCalculo/trigonometria` | Pública (`[AllowAnonymous]`) | Genera tabla de ángulos, radianes, senos y cosenos (por query params). |
+| `POST` | `/api/TablasCalculo/trigonometria` | Pública (`[AllowAnonymous]`) | Genera tabla trigonométrica a partir de un cuerpo JSON con paso y precisión. |
+| `GET` | `/api/TablasCalculo/trigonometria/texto` | Pública (`[AllowAnonymous]`) | Retorna la tabla trigonométrica en texto plano ASCII tabulado. |
+
 ---
 
 ## Implementación Detallada: Guía 4 - ASP.NET Core Identity con JWT
@@ -216,5 +236,103 @@ Id          Nombre                                                              
           1 Distribuidora La Costa                                                                               0991234567                1
 
 (1 rows affected)
+```
+
+---
+
+## Deberes / Ejercicios: Generación de Tablas de Potencias y Funciones Trigonométricas
+
+En conformidad con las directrices académicas institucionales de la **Escuela Politécnica Nacional (EPN)**, se incorporó al proyecto una arquitectura limpia y desacoplada para el cálculo numérico, generación de tablas de potencias y funciones trigonométricas (seno y coseno), cumpliendo con todas las normas de entrega y buenas prácticas de ingeniería de software.
+
+### 1. Directrices de Entrega Cumplidas
+- **Inclusión de comentarios de alto nivel orientados al propósito**: Todos los comentarios en el código explican **qué hace** y cuál es la intención de diseño o semántica matemática, absteniéndose de describir mecánicamente el **cómo lo hace** la sintaxis del lenguaje (apego estricto a las normas de *Clean Code*).
+- **Inclusión de cambios y mejoras solicitadas**: Se implementó el cómputo de potencias con base y rangos de exponentes configurables, así como el barrido angular con evaluación trigonométrica (seno, coseno y tangente con detección de asíntotas).
+- **Exclusión estricta de artefactos generados automáticamente**: Las carpetas `bin/` y `obj/` se encuentran estrictamente ignoradas a través del archivo `.gitignore` y no forman parte del control de versiones de Git.
+- **Documentación central en `README.md`**: Toda la especificación, contratos de API, principios aplicados y ejemplos de prueba se integran de manera formal en el repositorio de GitHub.
+
+### 2. Encabezado Académico Institucional (EPN)
+El archivo principal del servicio de cálculo (`Service/TablasCalculoService.cs`) incluye en su encabezado la estructura canónica requerida:
+
+```text
+# **********************************************************
+# Deber/Ejercicio 01
+# Tu Nombre va aquí: Jannys Garrido
+# Fecha de realización: 24/11/2026
+# Fecha de entrega: 24/11/2026
+# Resultados:
+#  * El código permita generar una tabla con potencias y una tabla con ángulos y los
+#    valores de las funciones seno y coseno
+# Conclusiones:
+#  * La abstracción mediante la interfaz ITablasCalculoService desacopla el cálculo matemático
+#    de las capas de transporte y presentación, cumpliendo rigurosamente con SRP y DIP.
+#  * El tratamiento numérico con normalización de residuos infinitesimales en múltiplos de 90°
+#    garantiza exactitud física y consistencia matemática frente al estándar IEEE 754.
+#  * La generación dual (estructurada en objetos DTO y renderizada en texto ASCII tabular)
+#    optimiza tanto el consumo de clientes API como la legibilidad en consolas y reportes.
+# Recomendaciones:
+#  * Restringir los rangos de entrada en los DTOs para impedir anomalías por desbordamiento numérico
+#    o degradación en tiempos de respuesta por tamaños excesivos de paso angular.
+#  * Enfocar la documentación y comentarios del código en la intención del negocio y la semántica
+#    del dominio, omitiendo descripciones mecánicas de sintaxis para preservar el principio Clean Code.
+#  * Centralizar el cálculo de funciones trigonométricas en métodos puros e inmutables para facilitar
+#    su prueba unitaria y futura extensión a otras funciones matemáticas.
+# Bibliografía:
+#  * Martin, R. C. (2008). Clean Code: A Handbook of Agile Software Craftsmanship. Prentice Hall.
+#  * Microsoft Learn. Documentación de .NET: Operaciones matemáticas y diseño de APIs REST en C#.
+#  * IEEE Standard for Floating-Point Arithmetic (IEEE 754-2019).
+# **********************************************************
+```
+
+### 3. Arquitectura y Principios SOLID Implementados
+
+1. **SRP (Single Responsibility Principle - Principio de Responsabilidad Única)**:
+   - `TablasCalculoService`: Responsable única y exclusivamente del algoritmo de cálculo matemático, normalización de coma flotante y renderizado de tablas.
+   - `TablasCalculoController`: Responsable única y exclusivamente del transporte HTTP, negociación de contenido y respuesta de códigos de estado.
+   - `TablasCalculoDTOs`: Responsables de transportar datos y validar restricciones de entrada (`Range`).
+2. **OCP (Open/Closed Principle - Principio de Abierto/Cerrado)**:
+   - Los contratos e interfaces permiten incorporar nuevas evaluaciones numéricas o formatos de exportación (ej. CSV, Markdown, LaTeX) extendiendo la interfaz sin modificar el núcleo de cálculo existente.
+3. **LSP (Liskov Substitution Principle - Principio de Sustitución de Liskov)**:
+   - Cualquier implementación que cumpla con `ITablasCalculoService` puede sustituir a `TablasCalculoService` sin alterar el comportamiento esperado por los consumidores.
+4. **ISP (Interface Segregation Principle - Principio de Segregación de Interfaces)**:
+   - `ITablasCalculoService` define métodos cohesivos orientados únicamente al cómputo y formateo tabular, sin mezclar dependencias de persistencia relacional o identidad.
+5. **DIP (Dependency Inversion Principle - Principio de Inversión de Dependencias)**:
+   - `TablasCalculoController` depende exclusivamente de la abstracción `ITablasCalculoService`. La inyección se resuelve a través del contenedor IoC de ASP.NET Core (`builder.Services.AddScoped<ITablasCalculoService, TablasCalculoService>()`).
+
+### 4. Muestras de Resultados y Visualización ASCII
+
+#### Tabla de Potencias (Base 2, Exponentes 0 a 10):
+```text
++------------+------------+--------------------+------------------------------+
+| Exponente  |    Base    |     Resultado      | Expresión Matemática         |
++------------+------------+--------------------+------------------------------+
+|          0 |       2.00 |             1.0000 | 2 ^ 0 = 1                    |
+|          1 |       2.00 |             2.0000 | 2 ^ 1 = 2                    |
+|          2 |       2.00 |             4.0000 | 2 ^ 2 = 4                    |
+|          3 |       2.00 |             8.0000 | 2 ^ 3 = 8                    |
+|          4 |       2.00 |            16.0000 | 2 ^ 4 = 16                   |
+|          5 |       2.00 |            32.0000 | 2 ^ 5 = 32                   |
+|          6 |       2.00 |            64.0000 | 2 ^ 6 = 64                   |
+|          7 |       2.00 |           128.0000 | 2 ^ 7 = 128                  |
+|          8 |       2.00 |           256.0000 | 2 ^ 8 = 256                  |
+|          9 |       2.00 |           512.0000 | 2 ^ 9 = 512                  |
+|         10 |       2.00 |         1,024.0000 | 2 ^ 10 = 1024                |
++------------+------------+--------------------+------------------------------+
+```
+
+#### Tabla Trigonométrica (0° a 360°, paso 45°):
+```text
++-------------+-------------+------------+------------+------------+--------------------------+
+| Ángulo (°)  | Ángulo(rad) |    Seno    |   Coseno   |  Tangente  | Observación              |
++-------------+-------------+------------+------------+------------+--------------------------+
+|         0.0 |      0.0000 |     0.0000 |     1.0000 |     0.0000 | Cero exacto              |
+|        45.0 |      0.7854 |     0.7071 |     0.7071 |     1.0000 | Definido                 |
+|        90.0 |      1.5708 |     1.0000 |     0.0000 |        N/D | Indeterminado (asíntota) |
+|       135.0 |      2.3562 |     0.7071 |    -0.7071 |    -1.0000 | Definido                 |
+|       180.0 |      3.1416 |     0.0000 |    -1.0000 |     0.0000 | Cero exacto              |
+|       225.0 |      3.9270 |    -0.7071 |    -0.7071 |     1.0000 | Definido                 |
+|       270.0 |      4.7124 |    -1.0000 |     0.0000 |        N/D | Indeterminado (asíntota) |
+|       315.0 |      5.4978 |    -0.7071 |     0.7071 |    -1.0000 | Definido                 |
+|       360.0 |      6.2832 |     0.0000 |     1.0000 |     0.0000 | Cero exacto              |
++-------------+-------------+------------+------------+------------+--------------------------+
 ```
 
