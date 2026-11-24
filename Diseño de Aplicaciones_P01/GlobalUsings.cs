@@ -1,0 +1,4 @@
+global using Diseño_de_Aplicaciones_P01.Interfaces;
+global using Diseño_de_Aplicaciones_P01.Repositories;
+global using Diseño_de_Aplicaciones_P01.Services;
+global using Diseño_de_Aplicaciones_P01.Service;

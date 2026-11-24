@@ -1,9 +1,10 @@
 using System.Text;
 using System.Security.Claims;
 using Diseño_de_Aplicaciones_P01.Data;
+using Diseño_de_Aplicaciones_P01.Interfaces;
 using Diseño_de_Aplicaciones_P01.Models;
 using Diseño_de_Aplicaciones_P01.Repositories;
-using Diseño_de_Aplicaciones_P01.Service;
+using Diseño_de_Aplicaciones_P01.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -23,10 +24,13 @@ builder.Services.AddDbContext<CafeteriaDbContext>(options =>
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Inyección de Dependencias: Interfaces en Repositories, Clases que conectan a la BD en Service
+// Inyección de Dependencias: Interfaces en Interfaces/, Repositorios en Repositories/, Servicios en Services/
 builder.Services.AddScoped<IProductoRepository, ProductoService>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioService>();
-builder.Services.AddScoped<IProveedorRepository, ProveedorService>();
+
+// Requerimiento Guía ITID803_02 (PPD03): Registro desacoplado de Repositorio y Servicio de Proveedores
+builder.Services.AddScoped<IProveedorRepository, ProveedorRepository>();
+builder.Services.AddScoped<IProveedorService, ProveedorService>();
 
 // Servicios de Autenticación, Token JWT y Gestión Dinámica de Roles (SOLID: SRP y DIP)
 builder.Services.AddScoped<ITokenService, TokenService>();
