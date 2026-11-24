@@ -239,3 +239,52 @@ Content-Type: application/json
 GET {{HostAddress}}/api/Roles/usuario/cliente1
 Authorization: Bearer {{tokenAdmin}}
 Accept: application/json
+
+
+
+### ====================================================================
+### DEBER / EJERCICIO: GENERACIÓN DE TABLAS MATEMÁTICAS Y TRIGONOMÉTRICAS
+### ====================================================================
+
+### 25. GET Tabla de Potencias por defecto (Base 2, Exponentes 0 a 10) -> 200 OK
+GET {{HostAddress}}/api/TablasCalculo/potencias
+Accept: application/json
+
+### 26. GET Tabla de Potencias personalizada (Base 3, Exponentes 1 a 6) -> 200 OK
+GET {{HostAddress}}/api/TablasCalculo/potencias?baseNumero=3&inicio=1&fin=6
+Accept: application/json
+
+### 27. POST Tabla de Potencias mediante cuerpo JSON (Base 5, Exponentes 0 a 5) -> 200 OK
+POST {{HostAddress}}/api/TablasCalculo/potencias
+Content-Type: application/json
+Accept: application/json
+
+{
+  "base": 5,
+  "exponenteInicial": 0,
+  "exponenteFinal": 5
+}
+
+### 28. GET Vista previa de Tabla de Potencias en Formato Texto Plano (ASCII) -> 200 OK
+GET {{HostAddress}}/api/TablasCalculo/potencias/texto?baseNumero=2&inicio=0&fin=10
+Accept: text/plain
+
+### 29. GET Tabla Trigonométrica (Ángulos, Seno y Coseno de 0° a 360°, paso 45°) -> 200 OK
+GET {{HostAddress}}/api/TablasCalculo/trigonometria?inicio=0&fin=360&paso=45&decimales=4
+Accept: application/json
+
+### 30. POST Tabla Trigonométrica personalizada (0° a 90°, paso 15°, precisión 4) -> 200 OK
+POST {{HostAddress}}/api/TablasCalculo/trigonometria
+Content-Type: application/json
+Accept: application/json
+
+{
+  "anguloInicial": 0,
+  "anguloFinal": 90,
+  "paso": 15,
+  "precisionDecimales": 4
+}
+
+### 31. GET Vista previa de Tabla Trigonométrica en Formato Texto Plano (ASCII) -> 200 OK
+GET {{HostAddress}}/api/TablasCalculo/trigonometria/texto?inicio=0&fin=180&paso=30&decimales=4
+Accept: text/plain
