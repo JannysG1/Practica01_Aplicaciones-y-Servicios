@@ -1,3 +1,31 @@
+/*
+# **********************************************************
+# Deber/Ejercicio: PPD03 – Arquitectura en Capas, Interfaces y Persistencia
+# Tu Nombre va aquí: Jannys Garrido
+# Fecha de realización: 24/11/2026
+# Fecha de entrega: 24/11/2026
+# Resultados:
+#  * El código implementa una arquitectura en capas desacoplada con interfaces:
+#    - Carpeta Interfaces/ para los contratos IProveedorRepository e IProveedorService.
+#    - Carpeta Repositories/ para ProveedorRepository usando CafeteriaDbContext directamente.
+#    - Carpeta Services/ para ProveedorService dependiendo de IProveedorRepository por constructor.
+#    - ProveedoresController refactorizado inyectando IProveedorService y retornando 201 CreatedAtAction.
+#    - Registro de dependencias en Program.cs y persistencia demostrada en SQL Server (dbo.Proveedores).
+# Conclusiones:
+#  * La separación en capas con interfaces desacopla totalmente la persistencia relacional de la lógica de negocio y transporte HTTP.
+#  * La inyección por constructor de IProveedorRepository en ProveedorService facilita el mantenimiento y la realización de pruebas unitarias con dobles de prueba (mocks).
+#  * El cumplimiento de los principios SOLID (SRP, ISP, DIP) garantiza escalabilidad, modularidad y robustez en la API REST.
+# Recomendaciones:
+#  * Mantener la inyección de dependencias a través de contratos e interfaces para evitar acoplamiento directo a implementaciones concretas.
+#  * Aplicar validaciones de negocio en la capa de servicios antes de interactuar con la base de datos para prevenir inconsistencias.
+#  * Documentar el propósito y diseño arquitectónico en función del qué hace y no de la mecánica sintáctica del lenguaje.
+# Bibliografía:
+#  * Martin, R. C. (2008). Clean Code: A Handbook of Agile Software Craftsmanship. Prentice Hall.
+#  * Microsoft Learn. Arquitectura de capas e inyección de dependencias en ASP.NET Core y Entity Framework Core.
+#  * Evans, E. (2003). Domain-Driven Design: Tackling Complexity in the Heart of Software. Addison-Wesley.
+# **********************************************************
+*/
+
 using Diseño_de_Aplicaciones_P01.Data;
 using Diseño_de_Aplicaciones_P01.Interfaces;
 using Diseño_de_Aplicaciones_P01.Models;
